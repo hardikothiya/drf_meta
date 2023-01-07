@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from .serializers import UserSerializer, MenuItemSerializer
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from .models import MenuItem
 
 from rest_framework import generics
-
+from .permissions import IsManager
 
 class UserList(generics.ListCreateAPIView):
+    permission_classes = []
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -34,14 +35,17 @@ class MenuItemRetrive(generics.RetrieveAPIView):
 
     
 class MenuItemCreate(generics.CreateAPIView):
+    permission_classes = [IsManager]
     queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
 
 
 class MenuListMoify(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsManager]
     serializer_class = MenuItemSerializer
     lookup_url_kwarg = 'pk'
     queryset = MenuItem.objects.all()
+
 
 
 
