@@ -2,6 +2,7 @@ from django.shortcuts import render
 from .serializers import UserSerializer, MenuItemSerializer
 from django.contrib.auth.models import User, Group
 from .models import MenuItem
+from django.http import JsonResponse
 
 from rest_framework import generics
 from .permissions import IsManager
@@ -42,14 +43,15 @@ class MenuItemCreate(generics.CreateAPIView):
 
 class MenuListMoify(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsManager]
+
     serializer_class = MenuItemSerializer
     lookup_url_kwarg = 'pk'
     queryset = MenuItem.objects.all()
 
+    def delete(self, request, pk=None):
+        content = self.get_object()
+        content.delete()
+        return JsonResponse('return some info', safe=False)
 
-
-
-    
-    
     
     
