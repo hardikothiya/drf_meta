@@ -1,7 +1,7 @@
 from django.shortcuts import render
-from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer
+from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer
 from django.contrib.auth.models import User, Group
-from .models import MenuItem, Cart
+from .models import MenuItem, Cart, OrderItem, Order
 from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 
@@ -83,12 +83,14 @@ class ManagerRole(generics.CreateAPIView):
             manager_group.save()
             return JsonResponse("hhhh", safe=False)
 
+
 class CartItems(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
+            print(self.request.user)
             return Cart.objects.filter(user=self.request.user)
         return Cart.objects.none()
 
@@ -99,7 +101,20 @@ class CartItemDelete(generics.DestroyAPIView):
     queryset = Cart.objects.all()
     lookup_url_kwarg = 'pk'
     queryset = MenuItem.objects.all()
+
     def delete(self, request, pk=None):
         content = self.get_object()
         content.delete()
         return JsonResponse('return some info', safe=False)
+
+
+class OrderList(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderListSerializer
+
+    def get_queryset(self):
+        print(self.request.user)
+        if self.request.user.is_authenticated:
+            return Order.objects.filter(user=self.request.user)
+        return Order.objects.none()
+

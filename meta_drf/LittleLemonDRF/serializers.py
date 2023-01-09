@@ -1,9 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
-from rest_framework.fields import ReadOnlyField
-
-from .models import MenuItem, Cart
+from .models import MenuItem, Cart, Order, OrderItem
 from django.contrib.auth.models import Group
 
 
@@ -25,10 +22,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='categorey.title')
+
     class Meta:
         model = MenuItem
 
-        fields = '__all__'
+        fields = ['title', 'price', 'category_name']
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -39,3 +38,27 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = Cart
 
         fields = ['quantity', 'price', 'user', 'id', 'menu_i']
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = [
+            "order",
+            "menuitem",
+            "quantity",
+            "unit_price",
+            "price"]
+
+
+class OrderListSerializer(serializers.ModelSerializer):
+    items_1 = serializers.RelatedField(source='OrderItem', many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ["user",
+                  "delivery_crew",
+                  "status",
+                  "total_price",
+                  'items_1'
+                  ]
