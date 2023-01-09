@@ -54,6 +54,7 @@ class OrderItem(models.Model):
     quantity = models.SmallIntegerField()
     unit_price = models.FloatField(blank=True, null=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    order_details = models.ManyToManyField('order', blank=True, null=True)
 
     class Meta:
         unique_together = ('order', 'menuitem')
@@ -63,10 +64,10 @@ class OrderItem(models.Model):
 
     def get_price(self):
         result = self.menuitem.price * self.quantity
-        return int(result)
+        return float(result)
 
     def save(self, *args, **kwargs):
-        self.unit_price = self.menuitem  # optional
+        self.unit_price = self.menuitem.price  # optional
         self.price = self.get_price()
         super(OrderItem, self).save(*args, **kwargs)
 
@@ -83,7 +84,6 @@ class Order(models.Model):
         return str(self.user)
 
     def get_total_price(self):
-        print(self.all_items.price)
         return sum(item.get_price() for item in self.all_items.get_price())
 
     # def save(self, *args, **kwargs):

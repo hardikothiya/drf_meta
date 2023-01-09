@@ -43,22 +43,19 @@ class CartItemSerializer(serializers.ModelSerializer):
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = [
-            "order",
-            "menuitem",
-            "quantity",
-            "unit_price",
-            "price"]
+        fields = "__all__"
 
 
 class OrderListSerializer(serializers.ModelSerializer):
-    items_1 = serializers.RelatedField(source='OrderItem', many=True, read_only=True)
+    items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
-        fields = ["user",
-                  "delivery_crew",
+        fields = [
+                  'id',
                   "status",
                   "total_price",
-                  'items_1'
+                  'items',
+                  'all_items'
                   ]
+        depth = 1

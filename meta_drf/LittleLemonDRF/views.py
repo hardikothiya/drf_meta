@@ -1,11 +1,15 @@
 from django.shortcuts import render
+from rest_framework.response import Response
+
 from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer
 from django.contrib.auth.models import User, Group
 from .models import MenuItem, Cart, OrderItem, Order
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework import generics
+from django.shortcuts import get_object_or_404
+
 from .permissions import IsManager
 from django.contrib.auth.models import Group
 
@@ -17,13 +21,16 @@ class UserList(generics.ListCreateAPIView):
 
 
 class UserDetail(generics.RetrieveAPIView):
-    def get_object(self, queryset=None):
-        user_id = self.kwargs.get('pk')
-        print(user_id)
-        obj = User.objects.get(id=user_id)
-        return obj
-
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        try:
+            return User.objects.get(id=self.kwargs.get('pk'))
+
+        except User.DoesNotExist:
+
+            raise Http404
 
 
 class MenuList(generics.ListAPIView):
@@ -111,10 +118,19 @@ class CartItemDelete(generics.DestroyAPIView):
 class OrderList(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderListSerializer
-
+    # print(self.request)
     def get_queryset(self):
-        print(self.request.user)
         if self.request.user.is_authenticated:
             return Order.objects.filter(user=self.request.user)
         return Order.objects.none()
 
+
+class OrderDetails(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderListSerializer
+
+    def get_object(self):
+        try:
+            return Order.objects.get(id=self.kwargs.get('pk'))
+        except Order.DoesNotExist:
+            raise Http404

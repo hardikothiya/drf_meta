@@ -15,6 +15,9 @@ urlpatterns = [
     path('groups/manager/users/post', ManagerRole.as_view()),
     path('cart/menu-items', CartItems.as_view()),
     path('cart/menu-item/<int:pk>', CartItemDelete.as_view()),
-    path('orders', OrderList.as_view())
+    path('orders', OrderList.as_view()),
+    path('orders/<int:pk>', OrderDetails.as_view()
+
+)
 
 ]
