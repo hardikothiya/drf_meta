@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 from rest_framework import serializers
 from .models import MenuItem, Cart, Order, OrderItem
 from django.contrib.auth.models import Group
@@ -30,32 +31,38 @@ class MenuItemSerializer(serializers.ModelSerializer):
         fields = ['title', 'price', 'category_name']
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['menuitem']
+
+
 class CartItemSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
-    menu_i = serializers.ReadOnlyField(source='menuitem.title')
+    menu_i = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
 
-        fields = ['quantity', 'price', 'user', 'id', 'menu_i']
-
-
-class OrderItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OrderItem
         fields = "__all__"
+    def get_menu_i(self, obj):
+        print(obj.id)
+        items_obj = OrderItem.objects.filter(user=obj.user, cart=obj.id).values()
+        return list(items_obj)
 
 
 class OrderListSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
-                  'id',
-                  "status",
-                  "total_price",
-                  'items',
-                  'all_items'
-                  ]
-        depth = 1
+            'id',
+            "status",
+            "total_price",
+            'items',
+            'all_items'
+        ]
+
+    def get_items(self, obj):
+        items_obj = OrderItem.objects.filter(user=obj.user).values()
+        return list(items_obj)

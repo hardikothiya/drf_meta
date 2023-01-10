@@ -13,8 +13,8 @@ urlpatterns = [
     path('menu-item/<int:pk>', MenuListMoify.as_view()),
     path('groups/manager/users', ManagerList.as_view()),
     path('groups/manager/users/post', ManagerRole.as_view()),
-    path('cart/menu-items', CartItems.as_view()),
-    path('cart/menu-item/<int:pk>', CartItemDelete.as_view()),
+    path('cart/cart-items', CartItems.as_view()),
+    path('cart/cart-item/<int:pk>', CartItemDelete.as_view()),
     path('orders', OrderList.as_view()),
     path('orders/<int:pk>', OrderDetails.as_view()
 

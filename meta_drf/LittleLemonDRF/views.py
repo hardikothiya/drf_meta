@@ -1,6 +1,3 @@
-from django.shortcuts import render
-from rest_framework.response import Response
-
 from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer
 from django.contrib.auth.models import User, Group
 from .models import MenuItem, Cart, OrderItem, Order
@@ -97,7 +94,7 @@ class CartItems(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            print(self.request.user)
+            print("77777777777", self.request.user)
             return Cart.objects.filter(user=self.request.user)
         return Cart.objects.none()
 
@@ -118,6 +115,7 @@ class CartItemDelete(generics.DestroyAPIView):
 class OrderList(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderListSerializer
+
     # print(self.request)
     def get_queryset(self):
         if self.request.user.is_authenticated:

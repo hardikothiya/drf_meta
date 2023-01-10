@@ -27,40 +27,27 @@ class MenuItem(models.Model):
 
 
 class Cart(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
-    quantity = models.SmallIntegerField()
-    unit_price = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-
-    class Meta:
-        unique_together = ('menuitem', 'user')
+    total_items = models.IntegerField(default=2)
 
     def __str__(self):
         return str(self.user)
 
-    def get_price(self):
-        result = self.menuitem.price * self.quantity
-        return result
-
-    def save(self, *args, **kwargs):
-        self.price = self.get_price()
-        super(Cart, self).save(*args, **kwargs)
-
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
     quantity = models.SmallIntegerField()
     unit_price = models.FloatField(blank=True, null=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    order_details = models.ManyToManyField('order', blank=True, null=True)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, null=True, blank=True)
 
     class Meta:
-        unique_together = ('order', 'menuitem')
+        unique_together = ('user', 'menuitem')
 
     def __str__(self):
-        return str(self.menuitem.title)
+        return str(self.menuitem.title) + str(self.user.username)
 
     def get_price(self):
         result = self.menuitem.price * self.quantity
@@ -79,13 +66,14 @@ class Order(models.Model):
     total_price = models.DecimalField(max_digits=6, decimal_places=2, blank=True, default=22)
     all_items = models.ForeignKey(OrderItem, on_delete=models.CASCADE, blank=True, null=True, related_name='all_items')
     aa_cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_data', null=True, blank=True)
+    is_delivered = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.user)
 
-    def get_total_price(self):
-        return sum(item.get_price() for item in self.all_items.get_price())
-
+    # def get_total_price(self):
+    #     return sum(item.get_price() for item in self.all_items.get_price())
+    #
     # def save(self, *args, **kwargs):
     #     self.total_price = self.get_total_price()
     #     super(Order, self).save(*args, **kwargs)
