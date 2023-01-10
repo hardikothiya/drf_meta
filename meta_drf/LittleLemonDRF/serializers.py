@@ -46,7 +46,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = "__all__"
     def get_menu_i(self, obj):
         print(obj.id)
-        items_obj = OrderItem.objects.filter(user=obj.user, cart=obj.id).values()
+        items_obj = OrderItem.objects.filter(user=obj.user).values()
         return list(items_obj)
 
 
@@ -60,7 +60,6 @@ class OrderListSerializer(serializers.ModelSerializer):
             "status",
             "total_price",
             'items',
-            'all_items'
         ]
 
     def get_items(self, obj):

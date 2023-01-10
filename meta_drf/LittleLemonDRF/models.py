@@ -28,20 +28,36 @@ class MenuItem(models.Model):
 
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     total_items = models.IntegerField(default=2)
+    total_cost = models.FloatField(default=3)
 
     def __str__(self):
         return str(self.user)
 
+    def save(self, *args, **kwargs):
+        items = self.cartitem_set.all()
+        total_cost = sum([item.price for item in items])
+        total_items = sum([item.quantity for item in items])
+        self.total_cost = total_cost
+        self.total_items = total_items
+        super().save(*args, **kwargs)
+
+    def update_total(self):
+        """update total_price and total_quantity fields"""
+        items = self.cartitem_set.all()
+        total_cost = sum([item.price for item in items])
+        total_items = sum([item.quantity for item in items])
+        self.total_cost = total_cost
+        self.total_items = total_items
+        self.save()
+
 
 class OrderItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cartitem_set', blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
     quantity = models.SmallIntegerField()
-    unit_price = models.FloatField(blank=True, null=True)
-    price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, null=True, blank=True)
+    price = models.FloatField(default=1)
 
     class Meta:
         unique_together = ('user', 'menuitem')
@@ -56,7 +72,12 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         self.unit_price = self.menuitem.price  # optional
         self.price = self.get_price()
-        super(OrderItem, self).save(*args, **kwargs)
+        self.cart.update_total()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        self.cart.update_total()
 
 
 class Order(models.Model):
@@ -64,16 +85,12 @@ class Order(models.Model):
     delivery_crew = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='delivery_crew', null=True)
     status = models.BooleanField(default=False)
     total_price = models.DecimalField(max_digits=6, decimal_places=2, blank=True, default=22)
-    all_items = models.ForeignKey(OrderItem, on_delete=models.CASCADE, blank=True, null=True, related_name='all_items')
-    aa_cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_data', null=True, blank=True)
+    cart = models.OneToOneField(Cart, on_delete=models.CASCADE)
     is_delivered = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.user)
 
-    # def get_total_price(self):
-    #     return sum(item.get_price() for item in self.all_items.get_price())
-    #
-    # def save(self, *args, **kwargs):
-    #     self.total_price = self.get_total_price()
-    #     super(Order, self).save(*args, **kwargs)
+    def save(self, *args, **kwargs):
+        self.total_price = self.cart.total_cost
+        super().save(*args, **kwargs)
