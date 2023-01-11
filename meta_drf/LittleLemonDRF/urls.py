@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import UserList, UserDetail, MenuList, MenuListMoify, MenuItemRetrive, MenuItemCreate, ManagerList, \
-    ManagerRole
+
 from .views import *
 
 urlpatterns = [
@@ -16,8 +15,11 @@ urlpatterns = [
     path('cart/cart-items', CartItems.as_view()),
     path('cart/cart-item/<int:pk>', CartItemDelete.as_view()),
     path('orders', OrderList.as_view()),
-    path('orders/<int:pk>', OrderDetails.as_view()
+    path('orders/<int:pk>', OrderDetails.as_view()),
+    path('create-order', CreateOrderItem.as_view()),
+    path('place-order', PlaceOrder.as_view()),
+    path('deliver-order/<int:pk>', OrderDeliverBy.as_view()),
 
-)
+
 
 ]

@@ -34,7 +34,11 @@ class MenuItemSerializer(serializers.ModelSerializer):
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
-        fields = ['menuitem']
+        fields = ['user', 'quantity', 'price', 'menuitem', 'cart']
+        read_only_fields = ('price', 'cart')
+
+        def create(self, validated_data):
+            return OrderItem(**validated_data)
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -44,10 +48,17 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = Cart
 
         fields = "__all__"
+
     def get_menu_i(self, obj):
         print(obj.id)
         items_obj = OrderItem.objects.filter(user=obj.user).values()
+
+        # cart = Cart.objects.create(user=obj.user)
+        # cart.save()
+
         return list(items_obj)
+
+    # create a new cart for the user
 
 
 class OrderListSerializer(serializers.ModelSerializer):
@@ -55,13 +66,24 @@ class OrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = [
-            'id',
-            "status",
-            "total_price",
-            'items',
-        ]
+        fields = '__all__'
 
     def get_items(self, obj):
         items_obj = OrderItem.objects.filter(user=obj.user).values()
         return list(items_obj)
+
+
+class PlaceOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+    # def update(self, instance, validated_data):
+    #     instance.is_delivered = validated_data.get('is_delivered', instance.email)
+    #     instance.save()
+    #     return instance
+
+
+
+
+

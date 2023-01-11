@@ -1,8 +1,10 @@
-from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer
+from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer, \
+    OrderItemSerializer, PlaceOrderSerializer
 from django.contrib.auth.models import User, Group
 from .models import MenuItem, Cart, OrderItem, Order
 from django.http import JsonResponse, Http404
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import generics
 from django.shortcuts import get_object_or_404
@@ -94,7 +96,6 @@ class CartItems(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            print("77777777777", self.request.user)
             return Cart.objects.filter(user=self.request.user)
         return Cart.objects.none()
 
@@ -115,6 +116,8 @@ class CartItemDelete(generics.DestroyAPIView):
 class OrderList(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderListSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['is_delivered']
 
     # print(self.request)
     def get_queryset(self):
@@ -129,6 +132,47 @@ class OrderDetails(generics.RetrieveAPIView):
 
     def get_object(self):
         try:
-            return Order.objects.get(id=self.kwargs.get('pk'))
+            return Order.objects.get(id=self.kwargs.get('pk'), )
         except Order.DoesNotExist:
             raise Http404
+
+
+class CreateOrderItem(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderItemSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return OrderItem.objects.filter(user=self.request.user)
+        return Order.objects.none()
+
+    # def perform_create(self, request):
+    #     manager_group = User.objects.get(username=self.request.user)
+    #     serializer_data = self.request.data
+    #     serializer_data['user'] = manager_group.id
+    #     dataa = OrderItemSerializer(data=serializer_data)
+    #     if dataa.is_valid():
+    #         dataa.save()
+    #     else:
+    #         raise Http404
+
+
+class PlaceOrder(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlaceOrderSerializer
+
+    # def perform_create(self, request):
+    #     manager_group = User.objects.get(username=self.request.user)
+    #     serializer_data = self.request.data
+    #     serializer_data['user'] = manager_group.id
+    #     dataa = PlaceOrderserializer(data=serializer_data)
+    #     if dataa.is_valid():
+    #         dataa.save()
+    #     else:
+    #         raise Http404
+
+
+class OrderDeliverBy(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderListSerializer
+    queryset = Order.objects.all()
