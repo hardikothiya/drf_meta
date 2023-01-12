@@ -1,5 +1,4 @@
-from .serializers import UserSerializer, MenuItemSerializer, GroupSerializer, CartItemSerializer, OrderListSerializer, \
-    OrderItemSerializer, PlaceOrderSerializer
+from .serializers import *
 from django.contrib.auth.models import User, Group
 from .models import MenuItem, Cart, OrderItem, Order
 from django.http import JsonResponse, Http404
@@ -59,6 +58,7 @@ class MenuListMoify(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MenuItemSerializer
     lookup_url_kwarg = 'pk'
     queryset = MenuItem.objects.all()
+    print(queryset)
 
     def delete(self, request, pk=None):
         content = self.get_object()
@@ -80,7 +80,6 @@ class ManagerRole(generics.CreateAPIView):
     def perform_create(self, request):
         id = request.data
         queryset = User.objects.get(name=id['name'])
-        print(queryset)
 
         user = GroupSerializer(queryset)
         if user.is_valid():
@@ -96,7 +95,7 @@ class CartItems(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
-            return Cart.objects.filter(user=self.request.user)
+            return Cart.objects.filter(is_active=True, user=self.request.user)
         return Cart.objects.none()
 
 
@@ -105,10 +104,17 @@ class CartItemDelete(generics.DestroyAPIView):
     serializer_class = CartItemSerializer
     queryset = Cart.objects.all()
     lookup_url_kwarg = 'pk'
-    queryset = MenuItem.objects.all()
+
+    def get_object(self):
+        if self.request.user.is_authenticated:
+            print(self.request.user)
+            order_id = self.kwargs["pk"]
+            cart_item = get_object_or_404(OrderItem, id=order_id, user=self.request.user)
+            return cart_item
 
     def delete(self, request, pk=None):
         content = self.get_object()
+        print(content)
         content.delete()
         return JsonResponse('return some info', safe=False)
 
@@ -119,7 +125,6 @@ class OrderList(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['is_delivered']
 
-    # print(self.request)
     def get_queryset(self):
         if self.request.user.is_authenticated:
             return Order.objects.filter(user=self.request.user)
@@ -141,38 +146,60 @@ class CreateOrderItem(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
 
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return OrderItem.objects.filter(user=self.request.user)
-        return Order.objects.none()
+    def create(self, request, *args, **kwargs):
+        try:
+            cart = Cart.objects.get(user=self.request.user, is_active=True)
+        #
+        except Exception as e:
+            cart = Cart.objects.create(user=self.request.user, is_active=True)
+        manager_group = User.objects.get(username=self.request.user)
+        serializer_data = self.request.data
+        serializer_data['user'] = manager_group.id
+        serializer_data['cart'] = cart.id
+        try:
+            dataa = OrderItemSerializer(data=serializer_data)
+            if dataa.is_valid():
+                dataa.save()
+                return JsonResponse(dataa.data)
 
-    # def perform_create(self, request):
-    #     manager_group = User.objects.get(username=self.request.user)
-    #     serializer_data = self.request.data
-    #     serializer_data['user'] = manager_group.id
-    #     dataa = OrderItemSerializer(data=serializer_data)
-    #     if dataa.is_valid():
-    #         dataa.save()
-    #     else:
-    #         raise Http404
+            else:
+                return JsonResponse(dataa.errors)
+        except Exception as e:
+            return JsonResponse({"data": "No detaails Found"}, safe=False)
 
 
 class PlaceOrder(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PlaceOrderSerializer
 
-    # def perform_create(self, request):
-    #     manager_group = User.objects.get(username=self.request.user)
-    #     serializer_data = self.request.data
-    #     serializer_data['user'] = manager_group.id
-    #     dataa = PlaceOrderserializer(data=serializer_data)
-    #     if dataa.is_valid():
-    #         dataa.save()
-    #     else:
-    #         raise Http404
+    def perform_create(self, request):
+        manager_group = User.objects.get(username=self.request.user)
+        serializer_data = self.request.data
+        serializer_data['user'] = manager_group.id
+        try:
+            cart = Cart.objects.get(user=manager_group.id, is_active=True)
+            serializer_data['cart'] = cart.id
+            dataa = PlaceOrderSerializer(data=serializer_data)
+            if dataa.is_valid():
+                dataa.save()
+                cart.is_active = False
+                cart.save()
+                return JsonResponse(dataa.data)
+            else:
+                return JsonResponse(dataa.errors)
+        except Exception as e:
+            raise Http404
 
 
 class OrderDeliverBy(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = OrderListSerializer
-    queryset = Order.objects.all()
+    permission_classes = [IsManager]
+    serializer_class = PlaceOrderSerializer
+    lookup_url_kwarg = 'pk'
+
+    def get_object(self):
+        order_id = self.kwargs["pk"]
+        a = get_object_or_404(Order, id=order_id)
+        return get_object_or_404(Order, id=order_id)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)

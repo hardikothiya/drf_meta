@@ -19,7 +19,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'id']
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        userdata = User.objects.create_user(**validated_data)
+        user = User.objects.get(username=userdata.username)
+        Cart.objects.create(user=user)
+        return userdata
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
@@ -32,13 +35,13 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    # cart = serializers.SerializerMethodField()
+
     class Meta:
         model = OrderItem
         fields = ['user', 'quantity', 'price', 'menuitem', 'cart']
-        read_only_fields = ('price', 'cart')
+        read_only_fields = ('price',)
 
-        def create(self, validated_data):
-            return OrderItem(**validated_data)
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -50,15 +53,8 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_menu_i(self, obj):
-        print(obj.id)
-        items_obj = OrderItem.objects.filter(user=obj.user).values()
-
-        # cart = Cart.objects.create(user=obj.user)
-        # cart.save()
-
+        items_obj = OrderItem.objects.filter(user=obj.user, cart_id=obj.id).values()
         return list(items_obj)
-
-    # create a new cart for the user
 
 
 class OrderListSerializer(serializers.ModelSerializer):
@@ -76,14 +72,13 @@ class OrderListSerializer(serializers.ModelSerializer):
 class PlaceOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = '__all__'
-
-    # def update(self, instance, validated_data):
-    #     instance.is_delivered = validated_data.get('is_delivered', instance.email)
-    #     instance.save()
-    #     return instance
+        fields = ['is_delivered', 'delivery_crew', 'user']
+        extra_kwargs = {"user": {"required": False, "allow_null": True}}
 
 
-
-
-
+    def update(self, instance, validated_data):
+        instance.is_delivered = validated_data.get('is_delivered', instance.is_delivered)
+        instance.delivery_crew = validated_data.get('delivery_crew', instance.delivery_crew)
+        instance.user = validated_data.get('user', instance.user)
+        instance.save()
+        return instance

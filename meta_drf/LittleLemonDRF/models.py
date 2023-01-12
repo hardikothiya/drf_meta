@@ -16,7 +16,7 @@ class Categorey(models.Model):
 
 class MenuItem(models.Model):
     title = models.CharField(max_length=255, db_index=True)
-    price = models.DecimalField(max_digits=6, decimal_places=2, db_index=True)
+    price = models.FloatField(default=0)
     featured = models.BooleanField(db_index=True, default=False)
     categorey = models.ForeignKey(Categorey, on_delete=models.PROTECT, related_name='items')
 
@@ -29,23 +29,22 @@ class MenuItem(models.Model):
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_user')
-    total_items = models.IntegerField(default=2)
-    total_cost = models.FloatField(default=3)
+    total_items = models.IntegerField(default=0)
+    total_price = models.FloatField(default=0)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return str(self.user)
+        return str(self.user) + "  " + str(self.id)
 
     def save(self, *args, **kwargs):
-
         super().save(*args, **kwargs)
 
     def update_total(self):
         try:
             items = self.cartitem_set.all()
-            total_cost = sum([item.price for item in items])
+            total_price = sum([item.price for item in items])
             total_items = sum([item.quantity for item in items])
-            self.total_cost = total_cost
+            self.total_price = total_price
             self.total_items = total_items
             self.save()
         except Exception as e:
@@ -53,14 +52,15 @@ class Cart(models.Model):
 
 
 class OrderItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cartitem_set', blank=True, null=True)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cartitem_set')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     menuitem = models.ForeignKey(MenuItem, on_delete=models.CASCADE)
     quantity = models.SmallIntegerField()
-    price = models.FloatField(default=1)
+    price = models.FloatField(default=0)
+    unit_price = models.FloatField(default=0)
 
     class Meta:
-        unique_together = ('user', 'menuitem')
+        unique_together = ('cart', 'menuitem')
 
     def __str__(self):
         return str(self.menuitem.title) + str(self.user.username)
@@ -70,16 +70,9 @@ class OrderItem(models.Model):
         return float(result)
 
     def save(self, *args, **kwargs):
-        self.unit_price = self.menuitem.price  # optional
+        self.unit_price = self.menuitem.price
+        print(self.menuitem.price)# optional
         self.price = self.get_price()
-        try:
-            self.cart = Cart.objects.get(user=self.user, is_active=True)
-
-        except Exception as e:
-            print('--------')
-            cart = Cart.objects.create(user=self.user, is_active=True)
-            self.cart = cart
-
         super().save(*args, **kwargs)
         self.cart.update_total()
 
@@ -92,13 +85,15 @@ class OrderItem(models.Model):
             cart = Cart.objects.create(user=self.user, is_active=True)
             self.cart = cart
         self.cart.update_total()
+        self.cart.save()
 
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     delivery_crew = models.ForeignKey(User, on_delete=models.CASCADE, related_name='delivery_crew', null=True)
-    total_price = models.DecimalField(max_digits=6, decimal_places=2, blank=True, default=22)
+    total_price = models.FloatField(default=0)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, blank=True, null=True)
+    total_items = models.IntegerField(null=True,blank=True)
     is_delivered = models.BooleanField(default=False)
 
     def __str__(self):
@@ -106,15 +101,10 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            # self.cart = Cart.objects.get(user=self.user, is_active=True)
-            # self.total_price = self.cart.total_cost
-            # print(self.cart.is_active)
-            # self.cart.is_active = False
-            # print(self.cart.is_active)
-            # self.cart.save()
+            self.total_price = self.cart.total_price
+            self.total_items = self.cart.total_items
             super().save(*args, **kwargs)
-
-        except Cart.DoesNotExist as e:
+        except Exception as e:
             print(e)
 
 
