@@ -52,13 +52,12 @@ class MenuItemCreate(generics.CreateAPIView):
     serializer_class = MenuItemSerializer
 
 
-class MenuListMoify(generics.RetrieveUpdateDestroyAPIView):
+class MenuListModify(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsManager]
 
     serializer_class = MenuItemSerializer
     lookup_url_kwarg = 'pk'
     queryset = MenuItem.objects.all()
-    print(queryset)
 
     def delete(self, request, pk=None):
         content = self.get_object()
@@ -99,15 +98,14 @@ class CartItems(generics.ListCreateAPIView):
         return Cart.objects.none()
 
 
-class CartItemDelete(generics.DestroyAPIView):
+class CartItemDelete(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
-    serializer_class = CartItemSerializer
+    serializer_class = UpdateOrderItemSerializer
     queryset = Cart.objects.all()
     lookup_url_kwarg = 'pk'
 
     def get_object(self):
         if self.request.user.is_authenticated:
-            print(self.request.user)
             order_id = self.kwargs["pk"]
             cart_item = get_object_or_404(OrderItem, id=order_id, user=self.request.user)
             return cart_item
@@ -116,7 +114,7 @@ class CartItemDelete(generics.DestroyAPIView):
         content = self.get_object()
         print(content)
         content.delete()
-        return JsonResponse('return some info', safe=False)
+        return JsonResponse({'Data': "Item deleted sucessfully"}, safe=False)
 
 
 class OrderList(generics.ListAPIView):
@@ -140,6 +138,7 @@ class OrderDetails(generics.RetrieveAPIView):
             return Order.objects.get(id=self.kwargs.get('pk'), )
         except Order.DoesNotExist:
             raise Http404
+
 
 
 class CreateOrderItem(generics.CreateAPIView):
@@ -176,29 +175,47 @@ class PlaceOrder(generics.CreateAPIView):
         manager_group = User.objects.get(username=self.request.user)
         serializer_data = self.request.data
         serializer_data['user'] = manager_group.id
+
         try:
             cart = Cart.objects.get(user=manager_group.id, is_active=True)
+            print(cart)
             serializer_data['cart'] = cart.id
+            print(cart.id)
             dataa = PlaceOrderSerializer(data=serializer_data)
+            print(dataa)
             if dataa.is_valid():
+                print('==========')
                 dataa.save()
+                print("--")
                 cart.is_active = False
                 cart.save()
                 return JsonResponse(dataa.data)
             else:
                 return JsonResponse(dataa.errors)
         except Exception as e:
+            print('sssssssssss')
             raise Http404
 
+class MenuListModify(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsManager]
 
+    serializer_class = MenuItemSerializer
+    lookup_url_kwarg = 'pk'
+    queryset = MenuItem.objects.all()
+
+    def delete(self, request, pk=None):
+        content = self.get_object()
+        content.delete()
+        return JsonResponse('return some info', safe=False)
 class OrderDeliverBy(generics.RetrieveUpdateAPIView):
     permission_classes = [IsManager]
-    serializer_class = PlaceOrderSerializer
+    serializer_class = UpdateOrderSerializer
     lookup_url_kwarg = 'pk'
 
     def get_object(self):
         order_id = self.kwargs["pk"]
-        a = get_object_or_404(Order, id=order_id)
+        order = get_object_or_404(Order, id=order_id)
+        print(order)
         return get_object_or_404(Order, id=order_id)
 
     def put(self, request, *args, **kwargs):
