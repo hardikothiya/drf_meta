@@ -14,3 +14,4 @@ from .placeorder import PlaceOrder
 from .userdetail import UserDetail
 from .userlist import UserList
 from .menulistmodify import MenuListModify
+from .ContactDetails import ContactDetails

@@ -22,7 +22,6 @@ urlpatterns = [
     path('create-order', CreateOrderItem.as_view()),
     path('place-order', PlaceOrder.as_view()),
     path('deliver-order/<int:pk>', OrderDeliverBy.as_view()),
-
-
+    path('contactdetails', ContactDetails.as_view(), name="contactdetails"),
 
 ]
