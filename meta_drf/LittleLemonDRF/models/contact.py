@@ -6,3 +6,4 @@ class ContactDetails(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     number = models.BigIntegerField()
     last_name = models.CharField(max_length=25)
+

@@ -7,3 +7,4 @@ from .placeorderserializer import PlaceOrderSerializer
 from .updateorderserializer import UpdateOrderSerializer
 from .updateorderitemserializer import UpdateOrderItemSerializer
 from .userserializer import UserSerializer
+from .ContactSerializer import ContactSerializer
